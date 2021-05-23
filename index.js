@@ -5,7 +5,7 @@ const io = require('socket.io')(http,{
     cors: {origin: '*'}
 })
 
-const items=[{name: 'cheese', check: false},
+let items=[{name: 'cheese', check: false},
 {name: 'dunkin doughnuts', check: false},
 {name: 'toast', check: true},
 {name: 'poptart', check: false}]
@@ -24,19 +24,37 @@ io.on('connection', (socket)=>{
 
     socket.on('message', (message)=>{
         console.log(message)
-        msg_arr =message.split(" ");
-        console.log(msg_arr)
-        switch(msg_arr[0]){
+        const prefix=message.substr(0,message.indexOf(' '))
+        const postfix=message.substr(message.indexOf(' ')+1);
+        console.log(postfix)
+        switch(prefix){
             case 'search':
-                console.log("searching for" + msg_arr[1])
-                searchText=msg_arr[1]
-                socket.broadcast.emit('searchText', searchText);
+                // console.log("searching for" + msg_arr[1])
+                const text=postfix
+                searchText=text
+                socket.broadcast.emit('searchText', text);
                 break;
+            case 'add':
+                console.log('adding')
+                const nuItem=JSON.parse(postfix)
+                if(isItemUnique(nuItem.name)){
+                    items=[nuItem,...items]
+                    io.sockets.emit('nuItem', nuItem);
+                }
         }
 
     })
 
 })
+
+function isItemUnique(nueName){
+    for (let item of items) {
+        if (nueName.toLowerCase().trim() === item.name.toLowerCase().trim()){
+            return false
+        }
+    }
+    return true
+}
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, ()=> console.log('Listening on port: ' + PORT))
