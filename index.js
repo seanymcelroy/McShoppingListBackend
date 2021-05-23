@@ -41,8 +41,15 @@ io.on('connection', (socket)=>{
                     items=[nuItem,...items]
                     io.sockets.emit('nuItem', nuItem);
                 }
-        }
-
+                break;
+            case 'check':
+                const name=JSON.parse(postfix).name
+                const nustatus=!JSON.parse(postfix).check
+                console.log(nustatus)
+                changeStatus(name, nustatus)
+                break;
+            }
+// 
     })
 
 })
@@ -54,6 +61,16 @@ function isItemUnique(nueName){
         }
     }
     return true
+}
+
+function changeStatus(name, status){
+    for (let item of items) {
+        if (name.toLowerCase().trim() === item.name.toLowerCase().trim()){
+            item.check=status
+            io.sockets.emit('changeStatus', {'name':name, 'check':status});
+            return
+        }
+    }
 }
 
 const PORT = process.env.PORT || 3000;
