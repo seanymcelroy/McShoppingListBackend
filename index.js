@@ -4,23 +4,23 @@ const http= require('http').createServer(app)
 const io = require('socket.io')(http,{
     cors: {origin: '*'}
 })
+const PORT = process.env.PORT || 3000;
 
 let items=[{name: 'cheese', check: false},
 {name: 'dunkin doughnuts', check: false},
-{name: 'toast', check: true},
-{name: 'poptart', check: false}]
+]
 
-let searchText='Cheese'
+let searchText=''
 
 app.get('/', (req, res)=>{
-    res.send("Hello world3")
+    res.send("Hello world on port: " +PORT)
 })
 
 io.on('connection', (socket)=>{
     console.log('socket connecxted' + socket.id)
 
-    socket.emit('items', items)
-    socket.emit('searchText', searchText)
+    // socket.emit('items', items)
+    // socket.emit('searchText', searchText)
 
     socket.on('message', (message)=>{
         console.log(message)
@@ -35,18 +35,26 @@ io.on('connection', (socket)=>{
                 socket.broadcast.emit('searchText', text);
                 break;
             case 'add':
-                console.log('adding')
-                const nuItem=JSON.parse(postfix)
-                if(isItemUnique(nuItem.name)){
-                    items=[nuItem,...items]
-                    io.sockets.emit('nuItem', nuItem);
-                }
+                console.log(postfix)
+                socket.broadcast.emit('nuItem', postfix);
+                const nuItem={'name':postfix, 'check': false}
+                nuItem.name=nuItem.name.toLowerCase()
+                items=[nuItem,...items]
                 break;
             case 'check':
-                const name=JSON.parse(postfix).name
-                const nustatus=!JSON.parse(postfix).check
-                console.log(nustatus)
-                changeStatus(name, nustatus)
+                // changeStatus(itm, nustatus)
+                
+                // socket.broadcast.emit('changeStatus', 'text');
+                socket.broadcast.emit('changeStatus', postfix);
+                updatedItem=JSON.parse(postfix)
+                changeStatus(updatedItem.name, updatedItem.check)
+                // console.log(updatedItem)
+                // Update data
+                break;
+            case 'refresh':
+                console.log("refreshing")
+                io.to(socket.id).emit('refresh', items)
+                // 
                 break;
             }
 // 
@@ -54,24 +62,12 @@ io.on('connection', (socket)=>{
 
 })
 
-function isItemUnique(nueName){
-    for (let item of items) {
-        if (nueName.toLowerCase().trim() === item.name.toLowerCase().trim()){
-            return false
-        }
-    }
-    return true
-}
-
 function changeStatus(name, status){
     for (let item of items) {
         if (name.toLowerCase().trim() === item.name.toLowerCase().trim()){
             item.check=status
-            io.sockets.emit('changeStatus', {'name':name, 'check':status});
             return
         }
     }
 }
-
-const PORT = process.env.PORT || 3000;
 http.listen(PORT, ()=> console.log('Listening on port: ' + PORT))
