@@ -56,6 +56,9 @@ io.on('connection', (socket)=>{
                 io.to(socket.id).emit('refresh', items)
                 // 
                 break;
+            case 'delete':
+                socket.broadcast.emit('delete', postfix);
+                items=[]
             }
 // 
     })
