@@ -6,9 +6,7 @@ const io = require('socket.io')(http,{
 })
 const PORT = process.env.PORT || 3000;
 
-let items=[{name: 'cheese', check: false},
-{name: 'dunkin doughnuts', check: false},
-]
+let items=[]
 
 let searchText=''
 
