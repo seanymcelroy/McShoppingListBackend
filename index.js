@@ -15,6 +15,8 @@ let validKeys=[
 ]
 let searchText=''
 
+console.log(generateCode(8))
+
 app.get('/', (req, res)=>{
     res.send("Hello world on port: " +PORT)
 })
@@ -81,5 +83,18 @@ function changeStatus(name, status){
             return
         }
     }
+}
+
+function generateCode(length,){
+    let possibleChars = '';
+    possibleChars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    possibleChars += '0123456789';
+        
+    let result = '';
+    for (var i = length; i > 0; --i) {
+        result += possibleChars[Math.floor(Math.random() * possibleChars.length)];
+    }
+    return result;
+    
 }
 http.listen(PORT, ()=> console.log('Listening on port: ' + PORT))
