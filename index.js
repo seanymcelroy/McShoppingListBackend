@@ -7,7 +7,12 @@ const io = require('socket.io')(http,{
 const PORT = process.env.PORT || 3000;
 
 let items=[]
+let items2=[]
 
+let validKeys=[
+    'ABC',
+    'DEF'
+]
 let searchText=''
 
 app.get('/', (req, res)=>{
@@ -24,7 +29,7 @@ io.on('connection', (socket)=>{
         console.log(message)
         const prefix=message.substr(0,message.indexOf(' '))
         const postfix=message.substr(message.indexOf(' ')+1);
-        console.log(postfix)
+        console.log(prefix)
         switch(prefix){
             case 'search':
                 // console.log("searching for" + msg_arr[1])
@@ -59,6 +64,12 @@ io.on('connection', (socket)=>{
                 items=[]
             }
 // 
+    })
+    socket.on('valid_key', entry=>{
+        // Query database for valid keys
+        const isValid=validKeys.includes(entry)
+        io.to(socket.id).emit('isValidCode', isValid)
+        console.log(entry)
     })
 
 })
