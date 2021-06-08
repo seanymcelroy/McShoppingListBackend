@@ -4,15 +4,26 @@ const http= require('http').createServer(app)
 const io = require('socket.io')(http,{
     cors: {origin: '*'}
 })
+var AWS = require("aws-sdk");
+require('dotenv').config()
 const PORT = process.env.PORT || 3000;
+
+AWS.config.update({
+    region: "eu-west-1",
+    endpoint: 'dynamodb.eu-west-1.amazonaws.com',
+// Should hide these keys
+    accessKeyId: process.env.ACCESS_KEY_ID,
+    secretAccessKey: process.env.SECRET_ACCESS_key
+  });
+
+
+const dynamodb = new AWS.DynamoDB()
+var docClient = new AWS.DynamoDB.DocumentClient();
 
 let items=[]
 let items2=[]
 
-let validKeys=[
-    'ABC',
-    'DEF'
-]
+let validKeys=[]
 let searchText=''
 
 console.log(generateCode(8))
@@ -67,11 +78,48 @@ io.on('connection', (socket)=>{
             }
 // 
     })
-    socket.on('valid_key', entry=>{
+    socket.on('call_roomkeydb', entry=>{
         // Query database for valid keys
+        const params = {
+            TableName: "room_codes",
+        
+        };
+        
+        docClient.scan(params, onScan);
+        var count = 0;
+        
+        function onScan(err, data) {
+            if (err) {
+                console.error("Unable to scan the table. Error JSON:", JSON.stringify(err, null, 2));
+            } else {
+                validKeys=[]        
+                console.log("Scan succeeded.");
+                data.Items.forEach(function(room) {
+                    validKeys.push(room.code);
+                 });
+                console.log(validKeys)
+                // continue scanning if we have more items
+                if (typeof data.LastEvaluatedKey != "undefined") {
+                    console.log("Scanning for more...");
+                    params.ExclusiveStartKey = data.LastEvaluatedKey;
+                    docClient.scan(params, onScan);
+                }
+            }
+        }
+       
+        // Set valid keys
+    })
+    socket.on('valid_key', entry=>{
         const isValid=validKeys.includes(entry)
         io.to(socket.id).emit('isValidCode', isValid)
+        // console.log(validKeys)
         console.log(entry)
+    })
+    socket.on('generate_key', entry=>{
+        const nuCode=generateCode(8)
+        // Store key in database
+        io.to(socket.id).emit('gimme_key', nuCode)
+        // Set valid keys
     })
 
 })
@@ -85,7 +133,7 @@ function changeStatus(name, status){
     }
 }
 
-function generateCode(length,){
+function generateCode(length){
     let possibleChars = '';
     possibleChars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     possibleChars += '0123456789';
